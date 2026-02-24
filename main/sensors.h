@@ -24,3 +24,5 @@ float mq4_get_ppm(const adc_oneshot_unit_handle_t adc_handle,
 
 float mq135_get_ppm(const adc_oneshot_unit_handle_t adc_handle,
 					const int adc_channel);
+
+esp_err_t dht11_get_temp_and_humidity(const int pin, int *temp, int *humidity);
