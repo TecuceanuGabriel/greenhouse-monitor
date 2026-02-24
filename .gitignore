@@ -1,4 +1,15 @@
 .old/
+
+# ESP-IDF
+build/
 sdkconfig
 sdkconfig.old
-build/
+managed_components/
+dependencies.lock
+
+# Python
+__pycache__/
+.venv/
+
+# Runtime data
+data_log.csv
