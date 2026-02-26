@@ -8,6 +8,7 @@
 #include "freertos/event_groups.h"
 #include "freertos/task.h"
 
+#include <string.h>
 #include <time.h>
 
 static const char *WIFI_TAG = "WIFI";
@@ -79,11 +80,13 @@ void init_wifi()
 	wifi_config_t wifi_config = {
 		.sta =
 			{
-				.ssid = WIFI_SSID,
-				.password = WIFI_PASS,
 				.threshold.authmode = WIFI_AUTH_WPA2_PSK,
 			},
 	};
+	strncpy((char *)wifi_config.sta.ssid, CONFIG_WIFI_SSID,
+			sizeof(wifi_config.sta.ssid));
+	strncpy((char *)wifi_config.sta.password, CONFIG_WIFI_PASSWORD,
+			sizeof(wifi_config.sta.password));
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 	ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
 	ESP_ERROR_CHECK(esp_wifi_start());

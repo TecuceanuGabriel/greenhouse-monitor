@@ -14,9 +14,9 @@ static const char *CLIENT_TAG = "TCP_CLIENT";
 esp_err_t my_connect(int *sock)
 {
 	struct sockaddr_in dest_addr;
-	dest_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
+	dest_addr.sin_addr.s_addr = inet_addr(CONFIG_SERVER_IP);
 	dest_addr.sin_family = AF_INET;
-	dest_addr.sin_port = htons(SERVER_PORT);
+	dest_addr.sin_port = htons(CONFIG_SERVER_PORT);
 
 	*sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
 	if (*sock < 0) {

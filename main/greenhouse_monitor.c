@@ -15,7 +15,6 @@
 
 #define DEEP_SLEEP_DURATION_SEC 1800
 #define WARM_UP_DURATION_SEC 180
-#define NR_RETRIES 5
 
 static const char *TAG = "MAIN";
 
@@ -33,7 +32,7 @@ void test()
 	ESP_LOGI(TAG, "ch4=%.2f co2=%.2f", mq4_ro_estimate, mq135_ro_estimate);
 
 	int connected = 0;
-	for (int attempt = 0; attempt < NR_RETRIES; ++attempt) {
+	for (int attempt = 0; attempt < CONFIG_NR_RETRIES; ++attempt) {
 		if (my_connect(&sock) == ESP_OK) {
 			ESP_LOGI(TAG, "Connected to the server.");
 			connected = 1;
@@ -105,7 +104,7 @@ void app_main()
 	esp_err_t status = ESP_FAIL;
 
 	// try reading from dht
-	for (int attempt = 0; attempt < NR_RETRIES; ++attempt) {
+	for (int attempt = 0; attempt < CONFIG_NR_RETRIES; ++attempt) {
 		status =
 			dht11_get_temp_and_humidity(DHT_PIN, &data.temp, &data.humidity);
 		if (status == ESP_OK) {
@@ -139,7 +138,7 @@ void app_main()
 	int sock;
 	bool sent = false;
 
-	for (int attempt = 0; attempt < NR_RETRIES; ++attempt) {
+	for (int attempt = 0; attempt < CONFIG_NR_RETRIES; ++attempt) {
 		if (my_connect(&sock) == ESP_OK) {
 			if (send_all(sock, &data, sizeof(data)) == ESP_OK) {
 				ESP_LOGI(TAG, "Data sent successfully.");

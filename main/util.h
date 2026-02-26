@@ -8,9 +8,6 @@
 #define MQ135_PIN ADC_CHANNEL_7
 #define ADC_UNIT ADC_UNIT_1
 
-#define WIFI_SSID "ssid"
-#define WIFI_PASS "pass"
-
 #define WIFI_CONNECTED_BIT BIT0
 
 extern adc_oneshot_unit_handle_t adc_handle;

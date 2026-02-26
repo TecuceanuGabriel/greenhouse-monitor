@@ -1,0 +1,33 @@
+menu "Greenhouse Monitor Configuration"
+
+    config WIFI_SSID
+        string "WiFi SSID"
+        default "myssid"
+        help
+            SSID of the WiFi network.
+
+    config WIFI_PASSWORD
+        string "WiFi Password"
+        default "mypassword"
+        help
+            Password of the WiFi network.
+
+    config SERVER_IP
+        string "Server IP Address"
+        default "192.168.1.100"
+        help
+            IP address of the TCP data collection server.
+
+    config SERVER_PORT
+        int "Server Port"
+        default 1234
+        help
+            TCP port of the data collection server.
+
+    config NR_RETRIES
+        int "Number of retries"
+        default 5
+        help
+            Number of retry attempts for sensor reads and server connections.
+
+endmenu
