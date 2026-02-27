@@ -105,8 +105,8 @@ void app_main()
 	gpio_set_direction(NPN_PIN, GPIO_MODE_OUTPUT);
 	gpio_set_level(NPN_PIN, 1);
 
-	// wait for warmup
-	// vTaskDelay(pdMS_TO_TICKS(1000 * WARM_UP_DURATION_SEC));
+	// wait for MQ sensor heater warmup
+	vTaskDelay(pdMS_TO_TICKS(1000 * WARM_UP_DURATION_SEC));
 
 	ESP_ERROR_CHECK(nvs_flash_init()); // needed for wifi
 	init_wifi();
