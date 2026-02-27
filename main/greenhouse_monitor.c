@@ -50,13 +50,16 @@ void test()
 	}
 
 	while (true) {
+		int temp, humidity;
 		esp_err_t status =
-			dht11_get_temp_and_humidity(DHT_PIN, &data.temp, &data.humidity);
+			dht11_get_temp_and_humidity(DHT_PIN, &temp, &humidity);
 		if (status != ESP_OK) {
 			ESP_LOGW(TAG, "DHT11 read failed. Skipping this cycle.");
 			vTaskDelay(pdMS_TO_TICKS(2000));
 			continue;
 		}
+		data.temp = temp;
+		data.humidity = humidity;
 
 		data.magic = PACKET_MAGIC;
 		data.version = PACKET_VERSION;
@@ -119,13 +122,15 @@ void app_main()
 	esp_log_level_set("*", ESP_LOG_WARN); // only show warnings and errors
 
 	sensor_data_t data;
+	int temp, humidity;
 	esp_err_t status = ESP_FAIL;
 
 	// try reading from dht
 	for (int attempt = 0; attempt < CONFIG_NR_RETRIES; ++attempt) {
-		status =
-			dht11_get_temp_and_humidity(DHT_PIN, &data.temp, &data.humidity);
+		status = dht11_get_temp_and_humidity(DHT_PIN, &temp, &humidity);
 		if (status == ESP_OK) {
+			data.temp = temp;
+			data.humidity = humidity;
 			break;
 		}
 		ESP_LOGW(TAG, "Attempt %d failed, retrying...", attempt + 1);

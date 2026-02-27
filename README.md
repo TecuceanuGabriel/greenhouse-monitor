@@ -9,7 +9,7 @@ An ESP32-based IoT system that monitors greenhouse environmental conditions (tem
  ┌─────────────────────┐
  │  DHT11 ──(GPIO 25)──┤
  │  MQ-4  ──(ADC CH6)──├── ESP32 ──── WiFi ────── TCP Server ──── data_log.csv
- │  MQ-135 ─(ADC CH7)──┤   (binary, 24 bytes)        │
+ │  MQ-135 ─(ADC CH7)──┤   (64-byte authenticated)     │
  └─────────────────────┘                          Processing
         powered via                               Script
       NPN 2N2222 switch                        (outlier detection,
@@ -26,7 +26,7 @@ An ESP32-based IoT system that monitors greenhouse environmental conditions (tem
 | Battery life (deep sleep cycle) | **~5.3 days** |
 | Deep sleep interval | 30 minutes |
 | Active window per cycle | ~3.5 min (3 min warmup + 30s measure/transmit) |
-| Data packet size | 24 bytes (binary struct) |
+| Data packet size | 64 bytes (32B data + 32B HMAC-SHA256) |
 | Sensor calibration | Logarithmic interpolation from datasheet curves |
 | Total BOM cost | ~135 RON |
 
@@ -57,9 +57,60 @@ With deep sleep, the device wakes once per hour for ~3.5 minutes (sensor warmup 
 ## Tech Stack
 
 - **Firmware**: C, ESP-IDF (FreeRTOS), bare-metal sensor drivers (DHT11 bit-banging, MQ analog reading)
-- **Communication**: TCP sockets, 24-byte binary protocol (`struct: iiffq`), NTP time sync
-- **Server**: Python, TCP socket server, CSV logging
+- **Communication**: TCP sockets, 64-byte authenticated binary protocol, NTP time sync
+- **Security**: HMAC-SHA256 packet authentication (mbedtls), pre-shared key via Kconfig
+- **Server**: Python, multithreaded TCP server, CSV logging, data validation
 - **Analysis**: pandas (median calculation, IQR outlier detection)
+
+## Wire Protocol
+
+Each packet is 64 bytes: a 32-byte sensor payload followed by a 32-byte HMAC-SHA256 signature. All fields are little-endian and packed (no padding).
+
+```
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|         Magic (0x4748)        |  Version (1)  |   Reserved    |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                       Sequence Number                         |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                      Temperature (int32)                      |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                       Humidity (int32)                         |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                       CH4 PPM (float32)                       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                       CO2 PPM (float32)                       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+|                      Timestamp (int64)                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+|                     HMAC-SHA256 (256 bits)                     |
+|                          (32 bytes)                           |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
+
+- **Magic**: `0x4748` ("GH") -- allows the server to reject non-protocol connections immediately
+- **Version**: protocol version for future extensibility
+- **Sequence number**: monotonic counter stored in RTC memory (survives deep sleep). The server detects gaps to identify lost packets
+- **HMAC-SHA256**: computed over the 32-byte payload using a pre-shared key. The server verifies with a timing-safe comparison (`hmac.compare_digest`)
+
+## Configuration
+
+All runtime parameters are configured via `idf.py menuconfig` under **Greenhouse Monitor Configuration**:
+
+| Parameter | Kconfig Key | Default |
+|---|---|---|
+| WiFi SSID | `CONFIG_WIFI_SSID` | `myssid` |
+| WiFi Password | `CONFIG_WIFI_PASSWORD` | `mypassword` |
+| Server IP | `CONFIG_SERVER_IP` | `192.168.1.100` |
+| Server Port | `CONFIG_SERVER_PORT` | `1234` |
+| HMAC Key | `CONFIG_HMAC_KEY` | `change-me-in-menuconfig` |
+| Retry Count | `CONFIG_NR_RETRIES` | `5` |
+
+The server reads its HMAC key from the `GH_HMAC_KEY` environment variable (defaults to the same Kconfig default for development).
 
 ## Building
 
@@ -90,8 +141,8 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-python server.py      # start TCP server (listens on 0.0.0.0:1234)
-python process.py     # analyze collected data
+GH_HMAC_KEY="your-secret" python server.py   # start TCP server (listens on 0.0.0.0:1234)
+python process.py                            # analyze collected data
 ```
 
 ## Future Improvements
