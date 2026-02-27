@@ -31,13 +31,13 @@ esp_err_t my_connect(int *sock)
 		return ESP_FAIL;
 	}
 
-	ESP_LOGI(CLIENT_TAG, "Successfully connected to server.");
+	ESP_LOGD(CLIENT_TAG, "Successfully connected to server.");
 	return ESP_OK;
 }
 
 void disconnect(const int sock)
 {
-	ESP_LOGI(CLIENT_TAG, "Closing socket.");
+	ESP_LOGD(CLIENT_TAG, "Closing socket.");
 	close(sock);
 }
 

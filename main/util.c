@@ -45,10 +45,10 @@ static void wifi_event_handler(void *arg,
 		esp_wifi_connect();
 	} else if (event_base == WIFI_EVENT &&
 			   event_id == WIFI_EVENT_STA_DISCONNECTED) {
-		ESP_LOGI(WIFI_TAG, "Disconnected, retrying...");
+		ESP_LOGW(WIFI_TAG, "Disconnected, retrying...");
 		esp_wifi_connect();
 	} else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
-		ESP_LOGI(WIFI_TAG, "Got IP address.");
+		ESP_LOGD(WIFI_TAG, "Got IP address.");
 		xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
 	}
 }
@@ -91,7 +91,7 @@ void init_wifi()
 	ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
 	ESP_ERROR_CHECK(esp_wifi_start());
 
-	ESP_LOGI(WIFI_TAG, "Wi-Fi initialization finished.");
+	ESP_LOGD(WIFI_TAG, "Wi-Fi initialization finished.");
 
 	// wait for connection
 	EventBits_t bits = xEventGroupWaitBits(wifi_event_group,
@@ -100,7 +100,7 @@ void init_wifi()
 										   pdFALSE,
 										   portMAX_DELAY);
 	if (bits & WIFI_CONNECTED_BIT) {
-		ESP_LOGI(WIFI_TAG, "Connected to Wi-Fi network");
+		ESP_LOGD(WIFI_TAG, "Connected to Wi-Fi network");
 	} else {
 		ESP_LOGE(WIFI_TAG, "Failed to connect");
 	}

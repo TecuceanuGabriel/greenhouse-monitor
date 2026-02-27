@@ -116,7 +116,7 @@ void app_main()
 #ifdef TEST_MODE
 	test();
 #else
-	esp_log_level_set("*", ESP_LOG_NONE); // disable all logs
+	esp_log_level_set("*", ESP_LOG_WARN); // only show warnings and errors
 
 	sensor_data_t data;
 	esp_err_t status = ESP_FAIL;
@@ -150,7 +150,7 @@ void app_main()
 	data.co2 = mq135_get_ppm(adc_handle, MQ135_PIN);
 	data.timestamp = time(NULL);
 
-	ESP_LOGI(TAG,
+	ESP_LOGD(TAG,
 			 "Sensor Read: Temp=%d Humidity=%d CH4=%.2f CO2=%0.2f - %lld",
 			 data.temp,
 			 data.humidity,
@@ -172,7 +172,7 @@ void app_main()
 	for (int attempt = 0; attempt < CONFIG_NR_RETRIES; ++attempt) {
 		if (my_connect(&sock) == ESP_OK) {
 			if (send_all(sock, &pkt, sizeof(pkt)) == ESP_OK) {
-				ESP_LOGI(TAG, "Data sent successfully (seq=%lu).",
+				ESP_LOGD(TAG, "Data sent successfully (seq=%lu).",
 						 packet_seq);
 				packet_seq++;
 				sent = true;
@@ -190,7 +190,7 @@ void app_main()
 
 sleep:
 	gpio_set_level(NPN_PIN, 0);
-	ESP_LOGI(TAG,
+	ESP_LOGD(TAG,
 			 "Entering deep sleep for %d seconds.",
 			 DEEP_SLEEP_DURATION_SEC);
 	esp_deep_sleep(1000000 * DEEP_SLEEP_DURATION_SEC);
