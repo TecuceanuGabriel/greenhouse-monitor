@@ -20,6 +20,13 @@ typedef struct __attribute__((packed)) {
 	int64_t timestamp;
 } sensor_data_t; // 32 bytes
 
+#define HMAC_SHA256_LEN 32
+
+typedef struct __attribute__((packed)) {
+	sensor_data_t data;
+	uint8_t hmac[HMAC_SHA256_LEN];
+} authenticated_packet_t; // 64 bytes
+
 /*
  * connect to server
  */

@@ -2,16 +2,22 @@ import socket
 import struct
 import datetime
 import csv
+import hashlib
+import hmac
 import os
 
 HOST = '0.0.0.0'
 PORT = 1234
 CSV_FILE = 'data_log.csv'
 
+HMAC_KEY = os.environ.get('GH_HMAC_KEY', 'change-me-in-menuconfig').encode()
+
 PACKET_MAGIC = 0x4748
 PACKET_VERSION = 1
-PACKET_FORMAT = '<HBBIiiffq'  # little-endian, matches ESP32
-PACKET_SIZE = struct.calcsize(PACKET_FORMAT)  # 32 bytes
+DATA_FORMAT = '<HBBIiiffq'  # little-endian, matches ESP32
+DATA_SIZE = struct.calcsize(DATA_FORMAT)  # 32 bytes
+HMAC_SIZE = 32
+PACKET_SIZE = DATA_SIZE + HMAC_SIZE  # 64 bytes
 
 # track sequence numbers per client to detect gaps
 last_seq = {}
@@ -53,8 +59,17 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     print("Connection lost:", e)
                     break
 
+                payload = raw_data[:DATA_SIZE]
+                received_hmac = raw_data[DATA_SIZE:]
+
+                # verify HMAC (timing-safe comparison)
+                expected_hmac = hmac.new(HMAC_KEY, payload, hashlib.sha256).digest()
+                if not hmac.compare_digest(received_hmac, expected_hmac):
+                    print(f"HMAC verification failed from {addr[0]}. Dropping packet.")
+                    continue
+
                 magic, version, reserved, seq, temp, humidity, ch4, co2, timestamp = \
-                    struct.unpack(PACKET_FORMAT, raw_data)
+                    struct.unpack(DATA_FORMAT, payload)
 
                 # validate protocol header
                 if magic != PACKET_MAGIC:

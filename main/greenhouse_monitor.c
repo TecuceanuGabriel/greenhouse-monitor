@@ -10,6 +10,7 @@
 #include <time.h>
 
 #include "client.h"
+#include "hmac.h"
 #include "sensors.h"
 #include "util.h"
 
@@ -73,7 +74,16 @@ void test()
 				 data.co2,
 				 data.timestamp);
 
-		if (connected && send_all(sock, &data, sizeof(data)) == ESP_OK) {
+		authenticated_packet_t pkt = { .data = data };
+		if (compute_hmac_sha256((const uint8_t *)&pkt.data,
+								sizeof(pkt.data), pkt.hmac) != ESP_OK) {
+			ESP_LOGE(TAG, "HMAC computation failed.");
+			vTaskDelay(pdMS_TO_TICKS(5000));
+			continue;
+		}
+
+		if (connected &&
+			send_all(sock, &pkt, sizeof(pkt)) == ESP_OK) {
 			ESP_LOGI(TAG, "Test data sent (seq=%lu).", packet_seq);
 			packet_seq++;
 		} else {
@@ -148,13 +158,20 @@ void app_main()
 			 data.co2,
 			 data.timestamp);
 
-	// try sending the data to the server
+	// compute HMAC and send authenticated packet
+	authenticated_packet_t pkt = { .data = data };
+	if (compute_hmac_sha256((const uint8_t *)&pkt.data, sizeof(pkt.data),
+							pkt.hmac) != ESP_OK) {
+		ESP_LOGE(TAG, "HMAC computation failed. Going to deep sleep.");
+		goto sleep;
+	}
+
 	int sock;
 	bool sent = false;
 
 	for (int attempt = 0; attempt < CONFIG_NR_RETRIES; ++attempt) {
 		if (my_connect(&sock) == ESP_OK) {
-			if (send_all(sock, &data, sizeof(data)) == ESP_OK) {
+			if (send_all(sock, &pkt, sizeof(pkt)) == ESP_OK) {
 				ESP_LOGI(TAG, "Data sent successfully (seq=%lu).",
 						 packet_seq);
 				packet_seq++;

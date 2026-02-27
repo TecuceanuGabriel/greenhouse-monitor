@@ -24,6 +24,13 @@ menu "Greenhouse Monitor Configuration"
         help
             TCP port of the data collection server.
 
+    config HMAC_KEY
+        string "HMAC Pre-Shared Key"
+        default "change-me-in-menuconfig"
+        help
+            Shared secret for HMAC-SHA256 packet authentication.
+            Must match the key configured on the server.
+
     config NR_RETRIES
         int "Number of retries"
         default 5
