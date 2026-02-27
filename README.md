@@ -4,17 +4,7 @@ An ESP32-based IoT system that monitors greenhouse environmental conditions (tem
 
 ## Architecture
 
-```
-  Greenhouse                        Server
- ┌─────────────────────┐
- │  DHT11 ──(GPIO 25)──┤
- │  MQ-4  ──(ADC CH6)──├── ESP32 ──── WiFi ────── TCP Server ──── data_log.csv
- │  MQ-135 ─(ADC CH7)──┤   (64-byte authenticated)     │
- └─────────────────────┘                          Processing
-        powered via                               Script
-      NPN 2N2222 switch                        (outlier detection,
-        (GPIO 27)                               median analysis)
-```
+![Block Diagram](/docs/block-diagram.svg)
 
 ## Key Metrics
 
@@ -31,6 +21,8 @@ An ESP32-based IoT system that monitors greenhouse environmental conditions (tem
 | Total BOM cost | ~135 RON |
 
 ## Hardware
+
+![Circuit Schematic](/docs/circuit_schematic.svg)
 
 | Component | Qty | Purpose |
 |---|---|---|
