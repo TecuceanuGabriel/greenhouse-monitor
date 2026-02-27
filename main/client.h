@@ -2,15 +2,23 @@
 
 #include "freertos/FreeRTOS.h"
 
+#include <stdint.h>
 #include <time.h>
 
-typedef struct {
-	int temp;
-	int humidity;
+#define PACKET_MAGIC 0x4748 // "GH"
+#define PACKET_VERSION 1
+
+typedef struct __attribute__((packed)) {
+	uint16_t magic;
+	uint8_t version;
+	uint8_t reserved;
+	uint32_t seq;
+	int32_t temp;
+	int32_t humidity;
 	float ch4;
 	float co2;
-	time_t timestamp;
-} sensor_data_t;
+	int64_t timestamp;
+} sensor_data_t; // 32 bytes
 
 /*
  * connect to server

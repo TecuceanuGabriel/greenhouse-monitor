@@ -18,6 +18,9 @@
 
 static const char *TAG = "MAIN";
 
+// persists across deep sleep cycles
+RTC_DATA_ATTR static uint32_t packet_seq = 0;
+
 // #define TEST_MODE // comment to deactivate test mode
 
 #ifdef TEST_MODE
@@ -54,6 +57,10 @@ void test()
 			continue;
 		}
 
+		data.magic = PACKET_MAGIC;
+		data.version = PACKET_VERSION;
+		data.reserved = 0;
+		data.seq = packet_seq;
 		data.ch4 = mq4_get_ppm(adc_handle, MQ4_PIN);
 		data.co2 = mq135_get_ppm(adc_handle, MQ135_PIN);
 		data.timestamp = time(NULL);
@@ -67,7 +74,8 @@ void test()
 				 data.timestamp);
 
 		if (connected && send_all(sock, &data, sizeof(data)) == ESP_OK) {
-			ESP_LOGI(TAG, "Test data sent.");
+			ESP_LOGI(TAG, "Test data sent (seq=%lu).", packet_seq);
+			packet_seq++;
 		} else {
 			ESP_LOGW(TAG, "Failed to send test data.");
 		}
@@ -121,7 +129,13 @@ void app_main()
 		goto sleep;
 	}
 
-	// read ch4
+	// populate header
+	data.magic = PACKET_MAGIC;
+	data.version = PACKET_VERSION;
+	data.reserved = 0;
+	data.seq = packet_seq;
+
+	// read gas sensors
 	data.ch4 = mq4_get_ppm(adc_handle, MQ4_PIN);
 	data.co2 = mq135_get_ppm(adc_handle, MQ135_PIN);
 	data.timestamp = time(NULL);
@@ -141,7 +155,9 @@ void app_main()
 	for (int attempt = 0; attempt < CONFIG_NR_RETRIES; ++attempt) {
 		if (my_connect(&sock) == ESP_OK) {
 			if (send_all(sock, &data, sizeof(data)) == ESP_OK) {
-				ESP_LOGI(TAG, "Data sent successfully.");
+				ESP_LOGI(TAG, "Data sent successfully (seq=%lu).",
+						 packet_seq);
+				packet_seq++;
 				sent = true;
 			}
 			disconnect(sock);
