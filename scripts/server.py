@@ -129,13 +129,14 @@ def handle_client(conn, addr):
                     writer.writerow([time_str, temp, humidity, round(ch4, 2), round(co2, 2)])
 
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind((HOST, PORT))
-    s.listen()
-    logger.info("Listening on %s:%d", HOST, PORT)
+if __name__ == '__main__':
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind((HOST, PORT))
+        s.listen()
+        logger.info("Listening on %s:%d", HOST, PORT)
 
-    while True:
-        conn, addr = s.accept()
-        t = threading.Thread(target=handle_client, args=(conn, addr), daemon=True)
-        t.start()
+        while True:
+            conn, addr = s.accept()
+            t = threading.Thread(target=handle_client, args=(conn, addr), daemon=True)
+            t.start()
