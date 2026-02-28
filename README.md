@@ -8,37 +8,43 @@ An ESP32-based IoT system that monitors greenhouse environmental conditions (tem
 
 ## Key Metrics
 
-| Metric | Value |
-|---|---|
-| Active power draw (WiFi on) | ~1250 mW (250 mA @ 5V) |
-| Deep sleep power draw | ~0.05 mW (10 uA @ 5V) |
-| Battery life (continuous) | ~4.5 hours |
-| Battery life (deep sleep cycle) | **~5.3 days** |
-| Deep sleep interval | 30 minutes |
-| Active window per cycle | ~3.5 min (3 min warmup + 30s measure/transmit) |
-| Data packet size | 64 bytes (32B data + 32B HMAC-SHA256) |
-| Sensor calibration | Logarithmic interpolation from datasheet curves |
-| Total BOM cost | ~135 RON |
+| Metric                          | Value                                           |
+| ------------------------------- | ----------------------------------------------- |
+| Active power draw (WiFi on)     | ~1250 mW (250 mA @ 5V)                          |
+| Deep sleep power draw           | ~0.05 mW (10 uA @ 5V)                           |
+| Battery life (continuous)       | ~4.5 hours                                      |
+| Battery life (deep sleep cycle) | **~5.3 days**                                   |
+| Deep sleep interval             | 30 minutes                                      |
+| Active window per cycle         | ~3.5 min (3 min warmup + 30s measure/transmit)  |
+| Data packet size                | 64 bytes (32B data + 32B HMAC-SHA256)           |
+| Firmware binary                 | 757 KB (74% of 1 MB app partition)              |
+| Application code (libmain)      | 2.4 KB (0.3% of binary)                         |
+| IRAM usage                      | 77% (98 KB / 128 KB)                            |
+| DRAM usage                      | 19% (34 KB / 176 KB)                            |
+| ADC resolution                  | 12-bit (4096 levels)                            |
+| Sensor calibration              | Logarithmic interpolation from datasheet curves |
+| Total BOM cost                  | ~135 RON                                        |
 
 ## Hardware
 
 ![Circuit Schematic](/docs/circuit_schematic.svg)
 
-| Component | Qty | Purpose |
-|---|---|---|
-| ESP-WROOM-32 | 1 | Microcontroller with WiFi |
-| DHT11 | 1 | Temperature and humidity |
-| MQ-4 | 1 | Methane (CH4) detection |
-| MQ-135 | 1 | CO2 detection |
-| 2N2222 NPN transistor | 1 | Sensor power switch for deep sleep |
-| 1.2V 2500mAh batteries | 4 | Power supply (series, 4.8V) |
-| Resistors | 6 | Pull-up (5k for DHT11) and voltage dividers |
+| Component              | Qty | Purpose                                     |
+| ---------------------- | --- | ------------------------------------------- |
+| ESP-WROOM-32           | 1   | Microcontroller with WiFi                   |
+| DHT11                  | 1   | Temperature and humidity                    |
+| MQ-4                   | 1   | Methane (CH4) detection                     |
+| MQ-135                 | 1   | CO2 detection                               |
+| 2N2222 NPN transistor  | 1   | Sensor power switch for deep sleep          |
+| 1.2V 2500mAh batteries | 4   | Power supply (series, 4.8V)                 |
+| Resistors              | 6   | Pull-up (5k for DHT11) and voltage dividers |
 
 The MQ sensors operate at 5V and output through voltage dividers since the ESP32 ADC accepts max 3.3V. The DHT11 runs directly at 3.3V with a 5k pull-up resistor. An NPN transistor on GPIO 27 cuts power to all sensors during deep sleep.
 
 ## Power Analysis
 
 In continuous mode, the system draws ~551 mA total:
+
 - ESP32 with WiFi: 250 mA
 - MQ-4 heater (33 ohm @ 5V): 150 mA
 - MQ-135 heater (33 ohm @ 5V): 150 mA
@@ -68,17 +74,17 @@ Each packet is 64 bytes: a 32-byte sensor payload followed by a 32-byte HMAC-SHA
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                      Temperature (int32)                      |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                       Humidity (int32)                         |
+|                       Humidity (int32)                        |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                       CH4 PPM (float32)                       |
+|                       CH4 PPM (float32)                        |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                       CO2 PPM (float32)                       |
+|                       CO2 PPM (float32)                        |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                                                               |
 |                      Timestamp (int64)                        |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                                                               |
-|                     HMAC-SHA256 (256 bits)                     |
+|                     HMAC-SHA256 (256 bits)                    |
 |                          (32 bytes)                           |
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -93,14 +99,14 @@ Each packet is 64 bytes: a 32-byte sensor payload followed by a 32-byte HMAC-SHA
 
 All runtime parameters are configured via `idf.py menuconfig` under **Greenhouse Monitor Configuration**:
 
-| Parameter | Kconfig Key | Default |
-|---|---|---|
-| WiFi SSID | `CONFIG_WIFI_SSID` | `myssid` |
-| WiFi Password | `CONFIG_WIFI_PASSWORD` | `mypassword` |
-| Server IP | `CONFIG_SERVER_IP` | `192.168.1.100` |
-| Server Port | `CONFIG_SERVER_PORT` | `1234` |
-| HMAC Key | `CONFIG_HMAC_KEY` | `change-me-in-menuconfig` |
-| Retry Count | `CONFIG_NR_RETRIES` | `5` |
+| Parameter     | Kconfig Key            | Default                   |
+| ------------- | ---------------------- | ------------------------- |
+| WiFi SSID     | `CONFIG_WIFI_SSID`     | `myssid`                  |
+| WiFi Password | `CONFIG_WIFI_PASSWORD` | `mypassword`              |
+| Server IP     | `CONFIG_SERVER_IP`     | `192.168.1.100`           |
+| Server Port   | `CONFIG_SERVER_PORT`   | `1234`                    |
+| HMAC Key      | `CONFIG_HMAC_KEY`      | `change-me-in-menuconfig` |
+| Retry Count   | `CONFIG_NR_RETRIES`    | `5`                       |
 
 The server reads its HMAC key from the `GH_HMAC_KEY` environment variable (defaults to the same Kconfig default for development).
 
